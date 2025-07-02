@@ -6,5 +6,5 @@ Purpose built to print logs for one tool. The people who need it, have it. File 
 
 ## Installation
 ```
-go install github.com/EvWilson/lgty
+go install github.com/EvWilson/lgty@latest
 ```

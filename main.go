@@ -3,11 +3,29 @@ package main
 import (
 	"bufio"
 	"encoding/json"
+	"flag"
 	"fmt"
 	"os"
+	"path"
 	"strings"
 	"time"
 )
+
+type Config struct {
+	WithExtra bool
+}
+
+func setupConfig(cfg *Config) {
+	flag.BoolVar(&cfg.WithExtra, "extra", false, "Show all JSON fields in log after message")
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "Usage: %s [options]\n", path.Base(os.Args[0]))
+		fmt.Fprintf(os.Stderr, "\nPrettify log lines according to our output.\n")
+		fmt.Fprintf(os.Stderr, "Reads from stdin and writes to stdout.\n")
+		fmt.Fprintf(os.Stderr, "\nOptions:\n")
+		flag.PrintDefaults()
+	}
+	flag.Parse()
+}
 
 const prefix = "@cee:"
 
@@ -18,6 +36,9 @@ type ExpectedInput struct {
 }
 
 func main() {
+	var cfg Config
+	setupConfig(&cfg)
+
 	scan := bufio.NewScanner(os.Stdin)
 	for scan.Scan() {
 		line := scan.Text()
@@ -34,7 +55,15 @@ func main() {
 				Printf(ColorRed, "Error while colorizing log level: %v\n", err)
 				continue
 			}
-			fmt.Printf("%s %s %s\n", time, level, input.Msg)
+			if !cfg.WithExtra {
+				fmt.Printf("%s %s %s\n", time, level, input.Msg)
+			} else {
+				extra, err := getExtra(after)
+				if err != nil {
+					Printf(ColorRed, "Error while extracting extra info: %v\n", err)
+				}
+				fmt.Printf("%s %s %s %s\n", time, level, input.Msg, SafeColorize(ColorGray, extra))
+			}
 		} else {
 			fmt.Println(line)
 		}
@@ -82,4 +111,32 @@ func SafeColorize(color Color, text string) string {
 		return string(color) + text + string(ColorReset)
 	}
 	return text
+}
+
+// Utility to get "extra" fields in log, that aren't the primary fields we're interested in
+func marshalWithSpaces(data any) (string, error) {
+	compact, err := json.Marshal(data)
+	if err != nil {
+		return "", err
+	}
+	result := string(compact)
+	result = strings.ReplaceAll(result, ":", ": ")
+	result = strings.ReplaceAll(result, ",", ", ")
+	return result, nil
+}
+
+func getExtra(jsonStr string) (string, error) {
+	excluded := []string{"msg", "time", "level"}
+	var full map[string]any
+	if err := json.Unmarshal([]byte(jsonStr), &full); err != nil {
+		return "", err
+	}
+	for _, field := range excluded {
+		delete(full, field)
+	}
+	res, err := marshalWithSpaces(full)
+	if err != nil {
+		return "", err
+	}
+	return res, nil
 }

@@ -35,6 +35,8 @@ func main() {
 				continue
 			}
 			fmt.Printf("%s %s %s\n", time, level, input.Msg)
+		} else {
+			fmt.Println(line)
 		}
 	}
 }

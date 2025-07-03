@@ -120,8 +120,8 @@ func marshalWithSpaces(data any) (string, error) {
 		return "", err
 	}
 	result := string(compact)
-	result = strings.ReplaceAll(result, ":", ": ")
-	result = strings.ReplaceAll(result, ",", ", ")
+	result = strings.ReplaceAll(result, "\":", "\": ")
+	result = strings.ReplaceAll(result, "\",", "\", ")
 	return result, nil
 }
 

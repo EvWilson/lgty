@@ -80,6 +80,8 @@ func colorizeLogLevel(level string) (string, error) {
 		return SafeColorize(ColorYellow, "WARN"), nil
 	case "error":
 		return SafeColorize(ColorRed, "ERRO"), nil
+	case "fatal":
+		return SafeColorize(ColorRed, "FATL"), nil
 	default:
 		return "", fmt.Errorf("unknown log level: %s", level)
 	}
